@@ -1,7 +1,7 @@
 #include "stm32f10x.h"                  // Device header
 #include "Delay.h"
 
-#define DATA_PIN     GPIO_Pin_0                // 使用PA2作为数据输出
+#define DATA_PIN     GPIO_Pin_0//TIM_Channel_1                // 使用PA2作为数据输出
 #define DATA_PORT    GPIOA
 #define BIT_TIME_US  833                       // 波特率1200bps (1/1200 ≈ 833μs/bit)
 
@@ -57,5 +57,5 @@ void Data_SendString(const char *str, uint8_t length) {
     SendByte(checksum);
     
     // 发送完成后复位引脚
-    GPIO_ResetBits(DATA_PORT, DATA_PIN);
+    TIM_CCxCmd(TIM2, TIM_Channel_1, DISABLE);
 }

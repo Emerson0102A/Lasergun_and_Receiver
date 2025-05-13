@@ -50,7 +50,7 @@ void Key_Control(void){
     // 处理PB11强制控制（优先级最高）
     if (key_event == 2) { 
         LED1_ON();//供电
-		Data_SendString("TEST", 4);
+		//Data_SendString("TEST", 4);
         pb11_forced = 1; // 标记强制点亮
     } else if (pb11_forced) { 
         LED1_OFF();
@@ -64,7 +64,7 @@ void Key_Control(void){
         led1_state = !led1_state;
         if (led1_state) {
             LED1_ON();//供电
-			Data_SendString("TEST", 4);
+			//Data_SendString("TEST", 4);
         } else {
             LED1_OFF();
         }
