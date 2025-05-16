@@ -28,15 +28,18 @@ uint8_t Key_GetNum(void)
         Delay_ms(20);//消抖
         if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1) == 0) {
             key_event = 1; // PB1按下事件
-            while (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1) == 0); // 等待松开
         }
     }
     last_pb1 = current_pb1;
     
     // 检测PB11（强制点亮功能）
     uint8_t current_pb11 = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11);
-    if (current_pb11 == 0) { // 持续检测低电平
-        key_event = 2; // PB11按下事件
+    if (last_pb11==1 && current_pb11==0) {
+        Delay_ms(20);//消抖
+        if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11)==0) {//按下是0，松开时1
+            key_event = 2;
+            
+        }
     }
     last_pb11 = current_pb11;
     
@@ -46,27 +49,23 @@ uint8_t Key_GetNum(void)
 void Key_Control(void){
 	//按键
 	uint8_t key_event = Key_GetNum();
-        
+      
     // 处理PB11强制控制（优先级最高）
     if (key_event == 2) { 
-        LED1_ON();//供电
-		//Data_SendString("TEST", 4);
-        pb11_forced = 1; // 标记强制点亮
-    } else if (pb11_forced) { 
+        LED1_ON(); 
+		while (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11) == 0) {
+            Data_SendString("ABCD", 4);
+            Delay_ms(50);  // 间隔 50 ms 重发一次
+        }
+        // 松手后跳出循环
         LED1_OFF();
-        pb11_forced = 0; // 清除强制标志
-        // 恢复PB1切换前的状态
-        if (led1_state) LED1_ON();
+        
     }
         
     // 处理PB1切换（仅在未强制时生效）
-    if (key_event == 1 && !pb11_forced) { 
-        led1_state = !led1_state;
-        if (led1_state) {
-            LED1_ON();//供电
-			//Data_SendString("TEST", 4);
-        } else {
-            LED1_OFF();
-        }
+    else if (key_event == 1) { 
+        LED1_ON();
+        Data_SendString("ABCD", 4);
+        LED1_OFF();
     }
 }

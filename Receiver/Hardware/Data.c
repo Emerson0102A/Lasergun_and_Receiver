@@ -3,7 +3,7 @@
 #include "OLED.h"
 
 #define DATA_PIN GPIO_Pin_2  // 连接到接收模块的 OUT 引脚
-#define DATA_PORT GPIOA      // 假设连接到 GPIOA
+#define DATA_PORT GPIOA      
 
 #define BIT_TIME_US 833      // 1 bit 等待时间（根据波特率，833 微秒对应 1200bps）
 

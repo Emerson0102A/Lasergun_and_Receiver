@@ -1,7 +1,7 @@
 /*说明：
-电源直接接在+极上
+Data直接接在+极上
 A0 38kHz载波
-A1 电源
+A1 供电
 
 
 */
@@ -26,6 +26,8 @@ int main(void)
 	PWM_Init();
 	Data_Init();
 	
+	PWM_SetCompare1(50);
+	
 	OLED_ShowString(1,1,"wuchangsheng");
 	OLED_ShowString(2,1,"2024080905006");
 	
@@ -34,7 +36,7 @@ int main(void)
 		//按键
 		Key_Control();
 		//PWM
-		PWM_SetCompare1(50);
+		
 		
 		
 		

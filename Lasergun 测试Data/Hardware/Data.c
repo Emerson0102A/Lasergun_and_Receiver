@@ -7,16 +7,7 @@
 
 // 初始化PA2为推挽输出模式
 void Data_Init(void) {
-    GPIO_InitTypeDef GPIO_InitStruct;
-    
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-    
-    GPIO_InitStruct.GPIO_Pin = DATA_PIN;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(DATA_PORT, &GPIO_InitStruct);
-    
-    GPIO_ResetBits(DATA_PORT, DATA_PIN);        // 初始状态为低电平
+        
 }
 
 // 发送单个比特（OOK调制）
