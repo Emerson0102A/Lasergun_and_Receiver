@@ -32,12 +32,28 @@ static uint8_t DigitalFilter(uint8_t raw) {
 /**
  * @brief 读取一个比特，反相 + 数字滤波
  */
-static inline uint8_t Data_ReadBit(void) {
+static uint8_t Data_ReadBit(void) {
+	uint8_t votes[3];
+	
+	Delay_us(BIT_TIME_US / 4);
+	votes[0] = GPIO_ReadInputDataBit(DATA_PORT, DATA_PIN);
+	
+	Delay_us(BIT_TIME_US / 4);
+	votes[1] = GPIO_ReadInputDataBit(DATA_PORT, DATA_PIN);
+	
+	Delay_us(BIT_TIME_US / 4);
+	votes[2] = GPIO_ReadInputDataBit(DATA_PORT, DATA_PIN);
+	
+	Delay_us(BIT_TIME_US / 4);
     uint8_t raw = GPIO_ReadInputDataBit(DATA_PORT, DATA_PIN);
-    return DigitalFilter(raw);
-	//return raw;
+	
+	
+    return (votes[0] + votes[1] + votes[2] >= 2) ? 1 : 0;
+	
 	
 }
+
+
 
 /**
  * @brief 读取一个字节，MSB 先行
@@ -54,6 +70,7 @@ static uint8_t Data_ReadByte(void) {
 /**
  * @brief EXTI2 中断入口：检测到下降沿时触发
  */
+
 void EXTI2_IRQHandler(void) {
     if (EXTI_GetITStatus(EXTI_Line2) == RESET) return;
 	//OLED_ShowString(1,1,"getWave");
@@ -63,13 +80,13 @@ void EXTI2_IRQHandler(void) {
 	
 
     // 对齐到第 1 个比特中点
-    Delay_us(BIT_TIME_US/2);
+    Delay_us(BIT_TIME_US/20);
 	
-	for (int i = 0; i < FILTER_LEN; i++) {
+	/*for (int i = 0; i < FILTER_LEN; i++) {
 		filter_buf[i] = GPIO_ReadInputDataBit(DATA_PORT, DATA_PIN);
 		Delay_us(BIT_TIME_US);
 	}
-	filter_idx = 0;
+	filter_idx = 0;*/
 	
 	// 1) 读两个同步头
 	uint8_t sync1 = Data_ReadByte();
@@ -83,28 +100,32 @@ void EXTI2_IRQHandler(void) {
     if (sync1 == 0xAA && sync2 == 0xAA) {
         // 2) 读长度
         uint8_t len = Data_ReadByte();
+		OLED_ShowNum(3,1,len,1);
         // 上限保护
         if (len > 0 && len <= 255) {
             uint8_t buf[256];
-            // 3) 读数据
+            // 3) 读数据j 
             for (uint8_t i = 0; i < len; i++) {
                 buf[i] = Data_ReadByte();
             }
             // 4) 读校验
             uint8_t csum = Data_ReadByte();
+			
+			
+			
             // 校验
             uint8_t sum = 0;
             for (uint8_t i = 0; i < len; i++) sum += buf[i];
             if (sum == csum) {
 				buf[len] = '\0';
 				OLED_Clear();  
-				OLED_ShowString(1, 1, "Successful!");
-				OLED_ShowString(2, 1, (char*)buf);
+				OLED_ShowString(2, 1, "Successful!");
+				
             }else{
 				OLED_Clear();
-				OLED_ShowString(1, 1, "Failed");
+				OLED_ShowString(2, 1, "Failed");
 			}
-			
+			OLED_ShowString(4, 1, (char*)buf);
         }
     }
 	Delay_us(BIT_TIME_US * 10);  
