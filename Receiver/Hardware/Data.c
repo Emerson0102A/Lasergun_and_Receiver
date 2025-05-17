@@ -1,82 +1,154 @@
-#include "stm32f10x.h"                  // Device header
+#include "stm32f10x.h"
 #include "Delay.h"
 #include "OLED.h"
+#include <string.h>
+#include <stdint.h>
+#include <stdio.h>
 
-#define DATA_PIN GPIO_Pin_2  // 连接到接收模块的 OUT 引脚
-#define DATA_PORT GPIOA      
+#define DATA_PORT    GPIOA
+#define DATA_PIN     GPIO_Pin_2
+#define BIT_TIME_US  833     // 1200 bps
 
-#define BIT_TIME_US 833      // 1 bit 等待时间（根据波特率，833 微秒对应 1200bps）
+// —— 数字滤波：滑动窗口多数投票 N=3 —— 
+#define FILTER_LEN  3
+static uint8_t filter_buf[FILTER_LEN];
+static uint8_t filter_idx = 0;
 
-// 初始化 GPIO 作为输入
+volatile uint8_t got_wave = 0;
+
+/**
+ * @brief 3 点多数投票滤波
+ * @param raw 新采样 (0/1)
+ * @return  滤波后 (0/1)
+ */
+static uint8_t DigitalFilter(uint8_t raw) {
+    filter_buf[filter_idx] = raw;
+    if (++filter_idx >= FILTER_LEN) filter_idx = 0;
+    int sum = 0;
+    for (int i = 0; i < FILTER_LEN; i++) sum += filter_buf[i];
+    return (sum > FILTER_LEN/2) ? 1 : 0;
+}
+
+/**
+ * @brief 读取一个比特，反相 + 数字滤波
+ */
+static inline uint8_t Data_ReadBit(void) {
+    uint8_t raw = GPIO_ReadInputDataBit(DATA_PORT, DATA_PIN);
+    return DigitalFilter(raw);
+	//return raw;
+	
+}
+
+/**
+ * @brief 读取一个字节，MSB 先行
+ */
+static uint8_t Data_ReadByte(void) {
+    uint8_t b = 0;
+    for (int i = 7; i >= 0; i--) {
+        if (Data_ReadBit()) b |= (1 << i);
+        Delay_us(BIT_TIME_US);
+    }
+    return b;
+}
+
+/**
+ * @brief EXTI2 中断入口：检测到下降沿时触发
+ */
+void EXTI2_IRQHandler(void) {
+    if (EXTI_GetITStatus(EXTI_Line2) == RESET) return;
+	//OLED_ShowString(1,1,"getWave");
+    EXTI_ClearITPendingBit(EXTI_Line2);
+    // 禁用后续中断，避免重入
+    EXTI->IMR &= ~EXTI_Line2;
+	
+
+    // 对齐到第 1 个比特中点
+    Delay_us(BIT_TIME_US/2);
+	
+	for (int i = 0; i < FILTER_LEN; i++) {
+		filter_buf[i] = GPIO_ReadInputDataBit(DATA_PORT, DATA_PIN);
+		Delay_us(BIT_TIME_US);
+	}
+	filter_idx = 0;
+	
+	// 1) 读两个同步头
+	uint8_t sync1 = Data_ReadByte();
+	uint8_t sync2 = Data_ReadByte();
+	char dbg[16];
+	sprintf(dbg, "%02X %02X", sync1, sync2);
+	OLED_ShowString(2,1, dbg);
+
+    
+	
+    if (sync1 == 0xAA && sync2 == 0xAA) {
+        // 2) 读长度
+        uint8_t len = Data_ReadByte();
+        // 上限保护
+        if (len > 0 && len <= 255) {
+            uint8_t buf[256];
+            // 3) 读数据
+            for (uint8_t i = 0; i < len; i++) {
+                buf[i] = Data_ReadByte();
+            }
+            // 4) 读校验
+            uint8_t csum = Data_ReadByte();
+            // 校验
+            uint8_t sum = 0;
+            for (uint8_t i = 0; i < len; i++) sum += buf[i];
+            if (sum == csum) {
+				buf[len] = '\0';
+				OLED_Clear();  
+				OLED_ShowString(1, 1, "Successful!");
+				OLED_ShowString(2, 1, (char*)buf);
+            }else{
+				OLED_Clear();
+				OLED_ShowString(1, 1, "Failed");
+			}
+			
+        }
+    }
+	Delay_us(BIT_TIME_US * 10);  
+    // 重新使能中断，准备下一帧
+    EXTI->IMR |= EXTI_Line2;
+}
+
+/**
+ * @brief 初始化 PA2 输入 + EXTI2 + NVIC
+ *        使能下降沿触发外部中断
+ */
 void Data_Init(void) {
     GPIO_InitTypeDef GPIO_InitStruct;
+    EXTI_InitTypeDef EXTI_InitStruct;
+    NVIC_InitTypeDef NVIC_InitStruct;
 
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+    // 1) 打时钟
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA  |
+                           RCC_APB2Periph_AFIO, ENABLE);
 
-    GPIO_InitStruct.GPIO_Pin = DATA_PIN;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN_FLOATING;  // 设置为浮动输入
+    // 2) PA2 
+    GPIO_InitStruct.GPIO_Pin  = DATA_PIN;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(DATA_PORT, &GPIO_InitStruct);
+
+    // 3) PA2→EXTI2 复用
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource2);
+
+    // 4) EXTI2: 下降沿触发
+    EXTI_InitStruct.EXTI_Line    = EXTI_Line2;
+    EXTI_InitStruct.EXTI_Mode    = EXTI_Mode_Interrupt;
+    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Falling;
+    EXTI_InitStruct.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTI_InitStruct);
+
+    // 5) NVIC 使能 EXTI2_IRQn
+    NVIC_InitStruct.NVIC_IRQChannel                   = EXTI2_IRQn;
+    NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStruct.NVIC_IRQChannelSubPriority        = 1;
+    NVIC_InitStruct.NVIC_IRQChannelCmd                = ENABLE;
+    NVIC_Init(&NVIC_InitStruct);
+
+    // 清空 filter_buf，避免启动时读到脏数据
+    memset(filter_buf, 0, sizeof(filter_buf));
 }
-
-// 读取一个 bit（0 或 1）
-uint8_t Data_ReadBit(void) {
-    return GPIO_ReadInputDataBit(DATA_PORT, DATA_PIN);
-}
-
-// 从接收模块读取一个字节（8 位）
-uint8_t Data_ReadByte(void) {
-    uint8_t byte = 0;
-    
-    for (int i = 7; i >= 0; i--) {
-        if (Data_ReadBit()) {
-            byte |= (1 << i);  // 如果是高电平，则设置相应位
-        }
-        Delay_us(BIT_TIME_US);  // 等待 833 微秒
-    }
-    
-    return byte;
-}
-
-// 解码并输出接收到的数据
-void Data_Receive(void) {
-    uint8_t sync1, sync2, length, checksum;
-    uint8_t data[256];  // 假设最多接收 256 字节数据
-    uint8_t i;
-
-    // 1. 等待同步头 0xAA 0xAA
-    sync1 = Data_ReadByte();
-    sync2 = Data_ReadByte();
-    
-    if (sync1 != 0xAA || sync2 != 0xAA) {
-        return;  // 如果没有同步头，直接返回
-    }
-
-    // 2. 读取数据长度
-    length = Data_ReadByte();
-
-    // 3. 读取数据
-    for (i = 0; i < length; i++) {
-        data[i] = Data_ReadByte();
-    }
-
-    // 4. 读取校验和
-    checksum = Data_ReadByte();
-
-    // 校验和验证（假设简单的累加和校验）
-    uint8_t computed_checksum = 0;
-    for (i = 0; i < length; i++) {
-        computed_checksum += data[i];
-    }
-
-    // 校验是否正确
-    if (computed_checksum == checksum) {
-        OLED_ShowString(1, 1, "success");
-		OLED_ShowString(2, 1, (char *)data);
-		
-    } else {
-        OLED_ShowString(1,1,"fail");
-    }
-}
-
 
