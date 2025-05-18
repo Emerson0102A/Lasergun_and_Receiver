@@ -66,8 +66,8 @@ void Key_Control(void){
     else if (key_event == 1) { 
         LED1_ON();
 		while(1){
-			Data_SendString("ABCD", 4);
-			//Data_Test();
+			//Data_SendString("ABCD", 4);
+			Data_Test();
 		}
         
         LED1_OFF();

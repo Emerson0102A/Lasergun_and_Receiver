@@ -28,8 +28,7 @@ int main(void)
 	
 	PWM_SetCompare1(50);
 	
-	OLED_ShowString(1,1,"wuchangsheng");
-	OLED_ShowString(2,1,"2024080905006");
+	
 	
 	while(1)
 	{
