@@ -29,4 +29,3 @@
 .\objects\recv.o: .\Library\stm32f10x_wwdg.h
 .\objects\recv.o: .\Library\misc.h
 .\objects\recv.o: Hardware\OLED.h
-.\objects\recv.o: Hardware\Recv.h

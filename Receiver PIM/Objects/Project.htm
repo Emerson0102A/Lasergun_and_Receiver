@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\Project.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\Project.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Sun May 18 19:00:24 2025
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Wed May 21 09:26:42 2025
 <BR><P>
 <H3>Maximum Stack Usage =        128 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -578,7 +578,7 @@ Global Symbols
 <LI><a href="#[5f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Recv_Init
 </UL>
 
-<P><STRONG><a name="[5f]"></a>Recv_Init</STRONG> (Thumb, 150 bytes, Stack size 24 bytes, recv.o(i.Recv_Init))
+<P><STRONG><a name="[5f]"></a>Recv_Init</STRONG> (Thumb, 164 bytes, Stack size 24 bytes, recv.o(i.Recv_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = Recv_Init &rArr; GPIO_Init
 </UL>
 <BR>[Calls]<UL><LI><a href="#[53]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_Init
@@ -590,7 +590,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[63]"></a>Recv_PollingFrame</STRONG> (Thumb, 500 bytes, Stack size 32 bytes, recv.o(i.Recv_PollingFrame))
+<P><STRONG><a name="[63]"></a>Recv_PollingFrame</STRONG> (Thumb, 576 bytes, Stack size 32 bytes, recv.o(i.Recv_PollingFrame))
 <BR><BR>[Stack]<UL><LI>Max Depth = 128<LI>Call Chain = Recv_PollingFrame &rArr; OLED_ShowNum &rArr; OLED_ShowChar &rArr; OLED_SetCursor &rArr; OLED_WriteCommand &rArr; OLED_I2C_SendByte
 </UL>
 <BR>[Calls]<UL><LI><a href="#[64]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_ReadInputDataBit

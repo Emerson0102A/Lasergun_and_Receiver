@@ -54,7 +54,7 @@ void Key_Control(void){
     if (key_event == 2) { 
         LED1_ON(); 
 		while (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11) == 0) {
-            Data_SendString("ABCD", 4);
+            Data_SendString("TEST", 4);
             Delay_ms(50);  // 间隔 50 ms 重发一次
         }
         // 松手后跳出循环
@@ -65,11 +65,8 @@ void Key_Control(void){
     // 处理PB1切换（仅在未强制时生效）
     else if (key_event == 1) { 
         LED1_ON();
-		while(1){
-			
-			Data_Test();
-		}
-        //Data_SendString("ABCD", 4);
+		
+        Data_SendString("ABCD", 4);
         LED1_OFF();
     }
 }
