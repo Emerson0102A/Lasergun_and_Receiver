@@ -2,6 +2,7 @@
 #include "stm32f10x.h"
 #include "OLED.h"
 #include "Recv.h"
+#include "Delay.h"
 
 #define DATA_PORT     GPIOA
 #define DATA_PIN      GPIO_Pin_2
@@ -132,18 +133,22 @@ void Recv_PollingFrame(void) {
 							
 							OLED_ShowString(4,1,symbol);
 							
-							OLED_ShowNum(1,7,5,1);
-							Delay_ms(1000);
-							OLED_ShowNum(1,7,4,1);
-							Delay_ms(1000);
-							OLED_ShowNum(1,7,3,1);
-							Delay_ms(1000);
-							OLED_ShowNum(1,7,2,1);
-							Delay_ms(1000);
-							OLED_ShowNum(1,7,1,1);
-							Delay_ms(1000);
-							
-                            //frame_ready = 1;
+//							OLED_ShowNum(1,7,5,1);
+//							Delay_ms(1000);
+//							OLED_ShowNum(1,7,4,1);
+//							Delay_ms(1000);
+//							OLED_ShowNum(1,7,3,1);
+//							Delay_ms(1000);
+//							OLED_ShowNum(1,7,2,1);
+//							Delay_ms(1000);
+//							OLED_ShowNum(1,7,1,1);
+//							Delay_ms(1000);
+//							
+//							
+//							OLED_Clear();
+//							OLED_ShowString(1,1,"running...");
+//							
+                            frame_ready = 1;
                             in_frame    = 0;
                         }
                         bit_count = 0;

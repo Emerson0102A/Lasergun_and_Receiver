@@ -66,15 +66,15 @@ void Key_Control(void){
     // 处理PB1切换（仅在未强制时生效）
     else if (key_event == 1) { 
         LED1_ON();
-		int id = 0;
-		while(id < 50){
-			Data_SendString(Serial_RxPacket);
-			id++;
-		}
-//		while(1){
-//			
-//			Data_Test();
+//		int id = 0;
+//		while(id < 50){
+//			Data_SendString(Serial_RxPacket);
+//			id++;
 //		}
+		while(1){
+			
+			Data_SendString(Serial_RxPacket);
+		}
         //Data_SendString(Serial_RxPacket);
         LED1_OFF();
     }

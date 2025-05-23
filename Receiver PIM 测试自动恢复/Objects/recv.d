@@ -30,3 +30,4 @@
 .\objects\recv.o: .\Library\misc.h
 .\objects\recv.o: Hardware\OLED.h
 .\objects\recv.o: Hardware\Recv.h
+.\objects\recv.o: .\System\Delay.h
